@@ -1,0 +1,44 @@
+﻿# Python
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment & Secrets
+.env
+backend/.env
+credentials.json
+token.json
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.oxlintrc.json
+
+# Scratch, Temporary & IDE caches
+.tmp/
+.idea/
+.vscode/
+*.swp
+*.swo
+scratch*
+
+# Skills & Internal IDE notes (per user instruction)
+.agents/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+diagram.md
+
+# Storage contents (ignore user uploads while keeping folder structure)
+storage/raw/*
+!storage/raw/.gitkeep
+storage/preprocessed/*
+!storage/preprocessed/.gitkeep
+backend/storage/

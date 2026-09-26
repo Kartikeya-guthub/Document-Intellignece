@@ -1,0 +1,321 @@
+{
+  "d8fb2fda-3ca7-498b-bce2-c10d18a2b62c": {
+    "document_id": "d8fb2fda-3ca7-498b-bce2-c10d18a2b62c",
+    "filename": "degraded_invoice.jpg",
+    "doc_type": "invoice",
+    "status": "NEEDS_REVIEW",
+    "total_ocr_elements": 5,
+    "extracted_fields": {
+      "total": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "seller": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "buyer": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "tax": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "invoice_date": {
+        "value": "2026-09-26",
+        "confidence": 0.9097,
+        "ocr_confidence": 0.9579,
+        "string_similarity": 0.7692,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "a8ac1edb-1ee8-48ac-a267-a599db7cbffa"
+        ],
+        "raw_ocr_text": "Date: 2026-09-26"
+      },
+      "invoice_no": {
+        "value": "12345",
+        "confidence": 0.832,
+        "ocr_confidence": 0.9483,
+        "string_similarity": 0.5263,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "fa200953-076c-4d9a-b715-8a93c0d11cde"
+        ],
+        "raw_ocr_text": "INVOICE,#12345"
+      },
+      "due_date": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "subtotal": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      }
+    },
+    "line_items": [
+      {
+        "group_id": "item_1",
+        "data": {
+          "item": "Server Rack",
+          "qty": null,
+          "unit_price": null,
+          "line_total": null
+        },
+        "confidence": 0.7787,
+        "ocr_confidence": 0.938,
+        "string_similarity": 0.3656,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "cf28a797-0b85-4f61-ab71-6da24b01433e"
+        ]
+      },
+      {
+        "group_id": "item_2",
+        "data": {
+          "item": "Networking",
+          "qty": null,
+          "unit_price": null,
+          "line_total": null
+        },
+        "confidence": 0.7563,
+        "ocr_confidence": 0.917,
+        "string_similarity": 0.3261,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "002ac435-9daf-4d93-8805-bcc6aa6ce957"
+        ]
+      }
+    ],
+    "could_not_extract": [
+      "total",
+      "seller",
+      "buyer",
+      "tax",
+      "due_date",
+      "subtotal"
+    ],
+    "validation_flags": [
+      {
+        "rule_name": "subtotal_tax_sum",
+        "field_name": "total",
+        "passed": true,
+        "details": {
+          "note": "One or more amounts missing, arithmetic check not applicable"
+        }
+      },
+      {
+        "rule_name": "due_after_invoice",
+        "field_name": "due_date",
+        "passed": true,
+        "details": {
+          "note": "Due date not present or unparsed, rule passed"
+        }
+      }
+    ],
+    "tamper_detection": {
+      "overall_risk": "HIGH",
+      "checks": [
+        {
+          "check_type": "metadata",
+          "result": "NOT_APPLICABLE",
+          "risk_level": "N/A",
+          "heatmap_path": null,
+          "details": {
+            "reason": "no PDF metadata available for image input (EXIF only, no PDF producer structure)",
+            "creator": null,
+            "producer": null,
+            "file_type": "jpg",
+            "creation_date": null,
+            "modification_date": null
+          }
+        },
+        {
+          "check_type": "ela",
+          "result": "SUSPICIOUS",
+          "risk_level": "HIGH",
+          "heatmap_path": "storage/tamper\\d8fb2fda-3ca7-498b-bce2-c10d18a2b62c_ela_heatmap.png",
+          "details": {
+            "disclaimer": "ELA is a heuristic signal, not proof of tampering \u2014 flag for human review only.",
+            "heatmap_file": "storage/tamper\\d8fb2fda-3ca7-498b-bce2-c10d18a2b62c_ela_heatmap.png",
+            "variance_ratio": 6.1,
+            "is_uniformly_noisy": false,
+            "max_local_variance": 1038.53,
+            "overall_mean_variance": 170.22,
+            "overall_mean_difference": 2.2
+          }
+        }
+      ]
+    }
+  },
+  "dbc21d6c-97d8-4eb9-8b99-0ada48d4be87": {
+    "document_id": "dbc21d6c-97d8-4eb9-8b99-0ada48d4be87",
+    "filename": "salary-slip-format.jpeg",
+    "doc_type": "salary_slip",
+    "status": "NEEDS_REVIEW",
+    "total_ocr_elements": 52,
+    "extracted_fields": {
+      "employee_name": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "pay_period": {
+        "value": null,
+        "confidence": 0.2,
+        "ocr_confidence": 0.0,
+        "string_similarity": 0.0,
+        "validation_pass": 1,
+        "review_status": "needs_review",
+        "source_element_ids": [],
+        "raw_ocr_text": ""
+      },
+      "deductions": {
+        "value": "15000",
+        "confidence": 0.9595,
+        "ocr_confidence": 0.9735,
+        "string_similarity": 0.9091,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "2ed9c321-af61-48bc-9da0-77b8b9c85a62"
+        ],
+        "raw_ocr_text": "15,000"
+      },
+      "employer": {
+        "value": "COMPANYNAME",
+        "confidence": 0.989,
+        "ocr_confidence": 0.978,
+        "string_similarity": 1.0,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "00beecb3-805b-4ffd-a145-d3270c6b39b2"
+        ],
+        "raw_ocr_text": "COMPANYNAME"
+      },
+      "net_pay": {
+        "value": "83100",
+        "confidence": 0.9786,
+        "ocr_confidence": 0.9572,
+        "string_similarity": 1.0,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "ce6f1bcc-0026-4ffb-8c20-f30baabcea66"
+        ],
+        "raw_ocr_text": "83100"
+      },
+      "gross": {
+        "value": "98100",
+        "confidence": 0.9471,
+        "ocr_confidence": 0.9488,
+        "string_similarity": 0.9091,
+        "validation_pass": 1,
+        "review_status": "auto_accepted",
+        "source_element_ids": [
+          "c7f843ed-1e4d-4dcc-b99a-ac27b1496de9"
+        ],
+        "raw_ocr_text": "98,100"
+      }
+    },
+    "line_items": [],
+    "could_not_extract": [
+      "employee_name",
+      "pay_period"
+    ],
+    "validation_flags": [
+      {
+        "rule_name": "gross_deductions_net",
+        "field_name": "net_pay",
+        "passed": true,
+        "details": {
+          "gross": 98100.0,
+          "net_pay": 83100.0,
+          "deductions": 15000.0,
+          "difference": 0.0,
+          "expected_net": 83100.0
+        }
+      }
+    ],
+    "tamper_detection": {
+      "overall_risk": "MEDIUM",
+      "checks": [
+        {
+          "check_type": "metadata",
+          "result": "NOT_APPLICABLE",
+          "risk_level": "N/A",
+          "heatmap_path": null,
+          "details": {
+            "reason": "no PDF metadata available for image input (EXIF only, no PDF producer structure)",
+            "creator": null,
+            "producer": null,
+            "file_type": "jpeg",
+            "creation_date": null,
+            "modification_date": null
+          }
+        },
+        {
+          "check_type": "ela",
+          "result": "SUSPICIOUS",
+          "risk_level": "MEDIUM",
+          "heatmap_path": "storage/tamper\\dbc21d6c-97d8-4eb9-8b99-0ada48d4be87_ela_heatmap.png",
+          "details": {
+            "disclaimer": "ELA is a heuristic signal, not proof of tampering \u2014 flag for human review only.",
+            "heatmap_file": "storage/tamper\\dbc21d6c-97d8-4eb9-8b99-0ada48d4be87_ela_heatmap.png",
+            "variance_ratio": 2.82,
+            "is_uniformly_noisy": false,
+            "max_local_variance": 1194.46,
+            "overall_mean_variance": 423.57,
+            "overall_mean_difference": 6.15
+          }
+        }
+      ]
+    }
+  }
+}
