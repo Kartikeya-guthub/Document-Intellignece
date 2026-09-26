@@ -23,13 +23,23 @@ os.makedirs(PREP_DIR, exist_ok=True)
 
 
 @router.post("/documents/upload")
-async def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_document(
+    file: UploadFile = File(...), 
+    run_full_pipeline: bool = True,
+    db: Session = Depends(get_db)
+):
     """
-    Phase 2: Ingestion & Preprocessing
-    1. Accept PDF/Image (single-page assumption)
-    2. Convert PDF to image if needed
-    3. Run fixed preprocessing pipeline
-    4. Save to DB and disk
+    End-to-End Document Upload:
+    1. Accepts PDF/Image
+    2. Runs duplicate detection (SHA-256)
+    3. Preprocesses and deskews image
+    4. If run_full_pipeline=True (default), automatically runs:
+       - GPU OCR & Table layout extraction
+       - LLM schema extraction & source citation
+       - Arithmetic & temporal validation
+       - Multi-factor confidence scoring
+       - Dual forensic tamper checks (PDF metadata + ELA heatmap)
+    5. Returns full report immediately in one single response.
     """
     ext = file.filename.split(".")[-1].lower()
     if ext not in ["pdf", "png", "jpg", "jpeg", "webp"]:
@@ -85,6 +95,23 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
+
+    if run_full_pipeline:
+        try:
+            full_report = run_end_to_end_pipeline(str(new_doc.id), db=db)
+            full_report["message"] = "Upload and full pipeline execution successful."
+            if is_duplicate:
+                full_report["message"] += f" (Duplicate of document {duplicate_of})"
+            return full_report
+        except Exception as e:
+            return {
+                "document_id": str(new_doc.id),
+                "status": new_doc.status,
+                "is_duplicate": is_duplicate,
+                "duplicate_of": duplicate_of,
+                "pipeline_error": str(e),
+                "message": f"Upload succeeded, but automatic pipeline encountered error: {str(e)}"
+            }
 
     return {
         "document_id": str(new_doc.id),
@@ -170,7 +197,7 @@ def process_document(doc_id: str, db: Session = Depends(get_db)):
 
 @router.post("/documents/{doc_id}/extract")
 def extract_document_fields(doc_id: str, db: Session = Depends(get_db)):
-    """Phase 4: LLM Schema Mapping + Source Citation."""
+    """Phase 4: LLM Schema Mapping + Source Citation + Validation & Confidence Scoring."""
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail=f"Document {doc_id} not found.")
@@ -178,6 +205,16 @@ def extract_document_fields(doc_id: str, db: Session = Depends(get_db)):
     res = extract_with_llm(doc_id, db=db)
     if "error" in res:
         raise HTTPException(status_code=500, detail=res["error"])
+    
+    # Run validation and confidence scoring automatically
+    try:
+        from app.validation.rules import validate_document
+        from app.confidence.engine import score_document_fields
+        validate_document(doc_id, db)
+        score_document_fields(doc_id, db)
+    except Exception as e:
+        print(f"Validation/confidence error: {e}")
+
     return res
 
 
@@ -271,5 +308,38 @@ def get_extracted_fields(doc_id: str, db: Session = Depends(get_db)):
                 "extracted_at":       f.extracted_at.isoformat() if f.extracted_at else None,
             }
             for f in fields
+        ]
+    }
+
+
+@router.post("/documents/{doc_id}/tamper")
+def run_tamper_check_endpoint(doc_id: str, db: Session = Depends(get_db)):
+    """Run forensic tamper detection (PDF Metadata + Error Level Analysis) on a document."""
+    from app.tamper.detector import run_tamper_checks
+    try:
+        results = run_tamper_checks(doc_id, db)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/documents/{doc_id}/tamper")
+def get_tamper_flags_endpoint(doc_id: str, db: Session = Depends(get_db)):
+    """Retrieve stored tamper detection flags and ELA heatmap link for a document."""
+    flags = db.query(TamperFlag).filter(TamperFlag.document_id == doc_id).all()
+    if not flags:
+        return {"document_id": doc_id, "tamper_checks": [], "message": "No tamper checks run yet. Call POST /documents/{doc_id}/tamper."}
+    
+    return {
+        "document_id": doc_id,
+        "tamper_checks": [
+            {
+                "check_type": tf.check_type,
+                "result": tf.result,
+                "risk_level": tf.risk_level,
+                "heatmap_url": f"/storage/tamper/{os.path.basename(tf.heatmap_path)}" if tf.heatmap_path else None,
+                "details": tf.details
+            }
+            for tf in flags
         ]
     }
