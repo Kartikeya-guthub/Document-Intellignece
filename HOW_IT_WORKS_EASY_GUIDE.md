@@ -1,456 +1,502 @@
-# 📄 Comprehensive Technical & Architectural Blueprint
+# 📄 How It Works: Technical Architecture & Step-by-Step Guide
 
-This document details the complete **underlying technology stack, algorithmic pipelines, data flow state transitions, and architectural diagrams** powering the Document Intelligence & Forensic Tamper Detection platform.
+This guide breaks down the **Document Intelligence & Forensic Tamper Detection Platform**. It provides both an intuitive mental model (the 7-station conveyor belt) and the **in-depth technical architecture, algorithms, subsystem drawings, and mathematical formulas** operating at every stage.
 
 ---
 
-## 🏛️ High-Level System Architecture
+## 🏛️ Overall System Architecture
 
-The platform follows an asynchronous, decoupled, API-first microservices architecture built for high-throughput document ingestion, GPU-accelerated deep learning inference, LLM-based structured reasoning, deterministic mathematical auditing, and pixel-level forensic analysis.
+The platform follows a decoupled, API-first microservices architecture separating GPU vision processing, LLM-based structured reasoning, deterministic mathematical validation, and pixel-level forensic analytics.
 
+### 1. ASCII Architecture Diagram
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                         CLIENT & PRESENTATION LAYER                              │
+│   ┌────────────────────────────────────────┐  ┌──────────────────────────────┐   │
+│   │   React 18 + Vite + TS Reviewer UI     │  │ Swagger UI / REST API Client │   │
+│   │   (SVG Bounding Boxes + ELA Heatmaps)  │  │ (http://localhost:8000/docs) │   │
+│   └───────────────────┬────────────────────┘  └──────────────┬───────────────┘   │
+└───────────────────────┼──────────────────────────────────────┼───────────────────┘
+                        │ HTTP POST Multipart / JSON           │
+                        ▼                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                       GATEWAY & ORCHESTRATION LAYER                              │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │                         FastAPI Web Server                               │   │
+│   │   • CORS Middleware       • Static Storage Mount (/storage)              │   │
+│   │   • Request Validation    • Pipeline Orchestrator (pipeline.py)          │   │
+│   └─────────────────────────────────────┬────────────────────────────────────┘   │
+└─────────────────────────────────────────┼────────────────────────────────────────┘
+                                          │
+    ┌─────────────────────────────────────┴─────────────────────────────────────┐
+    │                                                                           │
+    ▼                                                                           ▼
+┌─────────────────────────────────────────┐ ┌─────────────────────────────────────────┐
+│        DATA & PERSISTENCE LAYER         │ │      DEEP LEARNING & COMPUTE ENGINES    │
+│                                         │ │                                         │
+│ ┌─────────────────────────────────────┐ │ │ ┌─────────────────────────────────────┐ │
+│ │          PostgreSQL 16 DB           │ │ │ │       Station 1: OpenCV Prep        │ │
+│ │ • documents table (JSONB metadata)  │ │ │ │   • Deskew (minAreaRect + Affine)   │ │
+│ │ • ocr_elements (bboxes, text, conf) │ │ │ │   • Bilateral Filter (Denoise)      │ │
+│ │ • extracted_fields (citations, OSV) │ │ │ └──────────────────┬──────────────────┘ │
+│ │ • validation_flags (rules, deltas)  │ │ │                    ▼                    │
+│ │ • tamper_flags (ELA ratios, scores) │ │ │ ┌─────────────────────────────────────┐ │
+│ └─────────────────────────────────────┘ │ │ │   Station 2: PaddleOCR on CUDA GPU  │ │
+│                                         │ │ │   • PP-DocBlockLayout (Layout)      │ │
+│ ┌─────────────────────────────────────┐ │ │ │   • PP-OCRv5 Server Det & Rec       │ │
+│ │         Disk Storage Engine         │ │ │ │   • Spatial Grid Table Heuristic    │ │
+│ │ • storage/raw/ (original uploads)   │ │ │ └──────────────────┬──────────────────┘ │
+│ │ • storage/preprocessed/ (deskewed)  │ │ │                    ▼                    │
+│ │ • storage/tamper/ (JET heatmaps)    │ │ │ ┌─────────────────────────────────────┐ │
+│ └─────────────────────────────────────┘ │ │ │   Station 3: LLM Schema Extraction  │ │
+│                                         │ │ │   • NVIDIA NIM (Nemotron-3-Ultra)   │ │
+│                                         │ │ │   • Mandatory source_element_ids    │ │
+│                                         │ │ └──────────────────┬──────────────────┘ │
+│                                         │ │                    ▼                    │
+│                                         │ │ ┌─────────────────────────────────────┐ │
+│                                         │ │ │   Station 4: Python Math Audit      │ │
+│                                         │ │ │   • subtotal + tax == total         │ │
+│                                         │ │ └──────────────────┬──────────────────┘ │
+│                                         │ │                    ▼                    │
+│                                         │ │ ┌─────────────────────────────────────┐ │
+│                                         │ │ │   Station 5: Multi-Factor Scoring   │ │
+│                                         │ │ │   • 0.5*O + 0.3*S + 0.2*V           │ │
+│                                         │ │ └──────────────────┬──────────────────┘ │
+│                                         │ │                    ▼                    │
+│                                         │ │ ┌─────────────────────────────────────┐ │
+│                                         │ │ │   Station 6: Forensic Tamper Engine │ │
+│                                         │ │ │   • PyMuPDF Metadata Forensics      │ │
+│                                         │ │ │   • ELA JPEG Q=90 + 64x64 Grid Var  │ │
+│                                         │ │ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘ └─────────────────────────────────────────┘
+```
+
+### 2. High-Level Mermaid Component Diagram
 ```mermaid
 graph TD
-    subgraph ClientLayer [Client & Ingestion Layer]
-        A1[React 18 + Vite Frontend]
-        A2[REST API Consumer / cURL / Swagger]
+    Client[React Frontend / Swagger Client] -->|Upload Document| API[FastAPI Orchestrator]
+    
+    subgraph Storage [Persistence & Artifacts]
+        DB[(PostgreSQL 16 DB)]
+        Disk[Local Storage /raw /preprocessed /tamper]
     end
 
-    subgraph APILayer [FastAPI Gateway & Orchestration]
-        B1[FastAPI Server :8000]
-        B2[Authentication & Rate Limiting]
-        B3[Pipeline Orchestrator Engine]
+    subgraph Pipeline [7-Station Sequential Pipeline]
+        S1[Station 1: OpenCV Preprocessing]
+        S2[Station 2: GPU PaddleOCR Engine]
+        S3[Station 3: LLM Schema Extraction]
+        S4[Station 4: Deterministic Math Validation]
+        S5[Station 5: Confidence Scoring Engine]
+        S6[Station 6: Forensic Tamper Detection]
+        S7[Station 7: Aggregator & Router]
     end
 
-    subgraph StorageLayer [Persistence & Storage Engine]
-        C1[(PostgreSQL 16 DB)]
-        C2[Disk Storage: /raw, /preprocessed, /tamper]
-    end
-
-    subgraph ComputeEngines [Compute & Deep Learning Subsystems]
-        D1[Ingestion & CV Preprocessing Engine<br/>OpenCV + PyMuPDF]
-        D2[GPU OCR & Layout Engine<br/>PaddleOCR PP-OCRv5 + PP-DocBlockLayout]
-        D3[Spatial Grid Table Heuristic<br/>Coordinate Bounding Box Clustering]
-        D4[LLM Reasoning & Citation Engine<br/>NVIDIA NIM Nemotron-3-Ultra]
-        D5[Deterministic Validation Engine<br/>Arithmetic & Temporal Rules]
-        D6[Multi-Factor Confidence Engine<br/>Levenshtein + Linear Algebra Scoring]
-        D7[Forensic Tamper Detection Subsystem<br/>PDF Metadata + Pixel ELA Matrix]
-    end
-
-    A1 -->|HTTP POST Multipart| B1
-    A2 -->|HTTP POST Multipart| B1
-    B1 --> B3
-
-    B3 --> D1
-    D1 -->|SHA-256 Check & Deskewed PNG| C2
-    D1 -->|Persist Document Record| C1
-
-    B3 --> D2
-    D2 -->|Inference on CUDA gpu:0| D3
-    D3 -->|Store OcrElement BBoxes & Cells| C1
-
-    B3 --> D4
-    D4 -->|Extract Schema & BBox IDs| C1
-
-    B3 --> D5
-    D5 -->|Evaluate Arithmetic & Dates| C1
-
-    B3 --> D6
-    D6 -->|Compute 0.5O + 0.3S + 0.2V| C1
-
-    B3 --> D7
-    D7 -->|Generate JET Heatmap| C2
-    D7 -->|Store TamperFlags & Ratios| C1
-
-    B3 -->|Aggregated Full Report JSON| B1
-    B1 -->|Unified Response| A1
+    API --> S1
+    S1 --> Disk
+    S1 --> S2
+    S2 --> DB
+    S2 --> S3
+    S3 --> DB
+    S3 --> S4
+    S4 --> DB
+    S4 --> S5
+    S5 --> DB
+    S5 --> S6
+    S6 --> Disk
+    S6 --> DB
+    S6 --> S7
+    S7 --> DB
+    S7 -->|Full Report JSON| Client
 ```
 
 ---
 
-## 🔄 End-to-End Pipeline Dataflow & State Machine
-
-Every document uploaded progresses through a deterministic, strictly validated finite state machine (FSM):
-
-```
-       [ Client Upload ]
-               │
-               ▼
-       ┌───────────────┐
-       │   UPLOADED    │ ──► Compute SHA-256 Hash (Reject/Flag Duplicates)
-       └───────┬───────┘
-               │  OpenCV Deskewing & Bilateral Filter
-               ▼
-       ┌───────────────┐
-       │ PREPROCESSED  │ ──► Normalized 300 DPI Clean Image
-       └───────┬───────┘
-               │  PaddleOCR GPU Inference (PP-OCRv5 Server Det & Rec)
-               ▼
-       ┌───────────────┐
-       │   OCR_DONE    │ ──► Confidence Gate (c < 0.30 ➔ UNPROCESSABLE)
-       └───────┬───────┘     Spatial Grid Coordinate Clustering
-               │
-               ▼  NVIDIA NIM Nemotron-3-Ultra Schema Extraction
-       ┌───────────────┐
-       │ LLM_EXTRACTED │ ──► Mandatory Citation (source_element_ids)
-       └───────┬───────┘
-               │
-               ▼  Floating-Point Math & Temporal Rules
-       ┌───────────────┐
-       │   VALIDATED   │ ──► subtotal + tax == total (Log Delta Mismatch)
-       └───────┬───────┘
-               │
-               ▼  Multi-Factor Vector Scoring (0.5*O + 0.3*S + 0.2*V)
-       ┌──────────────────┐
-       │ CONFIDENCE_SCORED│ ──► Hard Clamping (V = 0 ➔ Confidence <= 0.50)
-       └───────┬──────────┘
-               │
-               ▼  PDF Metadata Check + Error Level Analysis (JPEG Q=90)
-       ┌────────────────┐
-       │ TAMPER_CHECKED │ ──► 64x64 Grid Variance Ratio & Color Heatmap
-       └───────┬────────┘
-               │
-     ┌─────────┴─────────┐
-     │  Routing Decision │
-     └─────────┬─────────┘
-               │
-      ┌────────┴────────┐
-      ▼                 ▼
-┌───────────────┐ ┌───────────────┐
-│ AUTO_ACCEPTED │ │ NEEDS_REVIEW  │
-│ (Score >=0.70 │ │ (Score <0.70  │
-│ & Math Pass   │ │ OR Math Fail  │
-│ & Clean ELA)  │ │ OR ELA High)  │
-└───────────────┘ └───────────────┘
-```
+## 🔄 The 7 Inspection Stations: Deep Technological Breakdown
 
 ---
 
-## 🧩 Deep Technical Breakdown: The 7 Subsystems
+### 🧼 Station 1: The Clean-Up Station (Ingestion & Preprocessing)
 
----
+#### 1. What It Does
+* **Duplicate Fingerprinting:** Calculates an instantaneous binary checksum before running heavy models. If an identical file exists, it flags it immediately.
+* **Format Normalization:** Automatically rasterizes multi-page vector PDFs into 300 DPI image matrices.
+* **Deskewing:** Calculates orientation skew from scanned paper and rotates the image so text rows are horizontal.
+* **Denoising:** Cleans scanner noise, speckles, and shadows while preserving character edges.
 
-### Station 1: Ingestion, Deduplication & Computer Vision Preprocessing
-
-#### 1. Technical Purpose
-Normalizes arbitrary inputs (PDF, PNG, JPG, WebP) into an aligned, deskewed, high-contrast, artifact-free image matrix ready for neural character recognition while eliminating redundant compute through cryptographic hashing.
-
+#### 2. Subsystem Architecture Drawing
 ```
-Raw File ──► [SHA-256 Hash] ──► Query Postgres doc_metadata
-                 │
-                 ├──► [If PDF] ──► PyMuPDF fitz (300 DPI Rendering)
-                 │
-                 └──► [OpenCV Deskew] ──► Otsu Threshold ──► minAreaRect ──► Affine Warp
-                                              │
-                                              ▼
-                                    Bilateral Filter ──► Normalized Clean PNG
+Uploaded File (PDF/Image)
+          │
+          ├──► [hashlib.sha256] ──► Compare DB metadata ──► Duplicate Flagged
+          │
+          ├──► [PyMuPDF (fitz)] (If PDF) ──► 300 DPI Bitmap
+          │
+          └──► [OpenCV cv2]
+                     │
+                     ├── Grayscale ➔ cv2.threshold (THRESH_BINARY_INV + THRESH_OTSU)
+                     ├── cv2.findNonZero (Text Pixel Coordinates)
+                     ├── cv2.minAreaRect ➔ Compute Angle θ
+                     ├── cv2.getRotationMatrix2D + cv2.warpAffine ➔ Deskew
+                     └── cv2.bilateralFilter(d=9, sigmaColor=75, sigmaSpace=75)
+                                    │
+                                    ▼
+                     Normalized Deskewed Image PNG
 ```
 
-#### 2. Underlying Algorithms & Technologies
-* **Cryptographic Byte Hashing:**
-  $$\text{Digest} = \text{SHA256}(\text{FileBytes})$$
-  Executed in $\mathcal{O}(N)$ stream time before disk persistence. Fast lookup on indexed `doc_metadata->>'sha256'`.
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **Cryptographic Byte Hashing:** Uses Python `hashlib.sha256(file_bytes).hexdigest()`. Executed in streaming $\mathcal{O}(N)$ memory time. The hash is saved in `documents.doc_metadata->>'sha256'` and checked via index.
 * **PDF Rasterization (`PyMuPDF / fitz`):**
-  Renders vector documents to high-resolution bitmaps using a target zoom factor:
-  $$\text{Matrix}(\text{scale}_x=4.166, \text{scale}_y=4.166) \implies 300\text{ DPI}$$
-* **Geometric Deskewing (`OpenCV`):**
-  1. Grayscale conversion $\rightarrow$ Otsu Binarization (`cv2.threshold` with `THRESH_BINARY_INV + THRESH_OTSU`).
-  2. Bounding contour extraction: `cv2.findNonZero()` isolates text pixels.
-  3. Minimum area oriented bounding box: `cv2.minAreaRect()` returns center point, dimensions, and angle $\theta \in [-90^\circ, 0^\circ)$.
-  4. Angle normalization:
-     $$\theta_{\text{corrected}} = \begin{cases} -(90 + \theta) & \text{if } \theta < -45^\circ \\ -\theta & \text{if } \theta \ge -45^\circ \end{cases}$$
-  5. Affine transformation via `cv2.getRotationMatrix2D(center, \theta_{\text{corrected}}, 1.0)` and `cv2.warpAffine()`.
+  Uses a scaling matrix where factor $s = \frac{300}{72} \approx 4.1667$:
+  $$\text{Matrix}(4.1667, 4.1667) \implies 300\text{ DPI Render}$$
+* **Skew Angle Detection (`cv2.minAreaRect`):**
+  Binarizes the image using Otsu thresholding, extracts all non-zero foreground points, and fits a minimum area oriented bounding box:
+  $$\theta_{\text{deskew}} = \begin{cases} -(90 + \theta) & \text{if } \theta < -45^\circ \\ -\theta & \text{if } \theta \ge -45^\circ \end{cases}$$
+* **Affine Rotation (`cv2.warpAffine`):**
+  Generates an affine transformation matrix around the image center $(c_x, c_y)$ with interpolation `cv2.INTER_CUBIC` and white border fill `borderValue=(255, 255, 255)`.
 * **Edge-Preserving Denoising (`cv2.bilateralFilter`):**
-  $$I^{\text{filtered}}(x) = \frac{1}{W_p} \sum_{x_i \in \Omega} I(x_i) f_r(\|I(x_i) - I(x)\|) g_s(\|x_i - x\|)$$
-  Parameters: `d=9, sigmaColor=75, sigmaSpace=75`. Smooths scanner background noise while preserving sharp font glyph edges.
+  Replaces pixel values using spatial Gaussian distance and photometric color intensity differences, preventing text blurring:
+  $$I^{\text{filtered}}(p) = \frac{1}{W} \sum_{q \in \Omega} I(q) \exp\left(-\frac{\|p-q\|^2}{2\sigma_s^2}\right) \exp\left(-\frac{\|I(p)-I(q)\|^2}{2\sigma_c^2}\right)$$
+  Parameters: `d=9, sigmaColor=75, sigmaSpace=75`.
 
 ---
 
-### Station 2: GPU-Accelerated OCR & Spatial Table Layout Heuristic
+### 👁️ Station 2: The Eye (GPU OCR & Table Detection)
 
-#### 1. Technical Purpose
-Localizes all textual bounding boxes on the document canvas, predicts character transcriptions with associated confidence probabilities on GPU, and reconstructs 2D tabular grids when native segmentation models encounter ambiguous borders.
+#### 1. What It Does
+* **Neural Text Localization:** Scans the preprocessed document and computes precise bounding boxes $[x, y, w, h]$ for all text lines.
+* **Character Recognition:** Translates pixel patterns inside each box into Unicode text with individual probability scores.
+* **Low-Confidence Gating:** Stamps unreadable, smudged, or low-probability text as `UNPROCESSABLE` so downstream AI never ingests garbage.
+* **Spatial Table Reconstruction:** Clusters scattered cells into a 2D table matrix (rows and columns) when native table borders are absent.
 
+#### 2. Subsystem Architecture Drawing
 ```
-Deskewed Image ──► [PaddleX / CUDA gpu:0]
-                         │
-                         ├──► PP-DocBlockLayout (Region Classification)
-                         ├──► PP-LCNet Orientation (Upright Rotation)
-                         ├──► PP-OCRv5 Server Det (DBNet Text Contours)
-                         └──► PP-OCRv5 Server Rec (SVTR Character Sequence)
-                                       │
-                                       ▼
-                         BBoxes & Confidences [x, y, w, h, conf]
-                                       │
-                         [Confidence Gate: conf >= 0.30]
-                                 /            \
-                           VALID (OK)     UNPROCESSABLE (Shielded from LLM)
-                                 │
-                         [Spatial Grid Clustering Heuristic]
-                                 │
-                         Reconstructed 2D Table Matrix (row_idx, col_idx)
+Preprocessed Image
+        │
+        ▼
+[NVIDIA RTX 3050 GPU (CUDA 12.3)]
+        │
+        ├── PP-DocBlockLayout ────► Identifies Layout Regions (Paragraph, Table, Figure)
+        ├── PP-LCNet Orientation ─► Rotates Inverted/Angled Lines Upright
+        ├── PP-OCRv5 Server Det ──► Differentiable Binarization (DBNet) BBoxes [x, y, w, h]
+        └── PP-OCRv5 Server Rec ──► SVTR Transformer + CTC Decode ➔ Text + Confidence c_i
+                                                 │
+                                                 ▼
+                                     [Confidence Gate: c_i >= 0.30]
+                                            /              \
+                                          YES               NO
+                                          /                  \
+                                     Status: "OK"      Status: "UNPROCESSABLE"
+                                          │                      │
+                                          ▼                      ▼
+                            [Spatial Grid Clustering]    (Shielded from LLM)
+                            Clusters Y-bands ➔ Rows
+                            Clusters X-bins  ➔ Cols
+                                          │
+                                          ▼
+                            Persist to ocr_elements Table
+                            (heuristic_sourced = true)
 ```
 
-#### 2. Underlying Models & Architecture
-* **Hardware Acceleration:** Native PyTorch / PaddlePaddle C++ runtime running on CUDA 12.3 (`device="gpu:0"`).
-* **Text Detection (`PP-OCRv5_server_det`):**
-  Based on Differentiable Binarization (DBNet) architecture with a lightweight convolutional backbone, producing precise polygon hulls and bounding rectangles $[x, y, w, h]$.
-* **Text Recognition (`PP-OCRv5_server_rec`):**
-  Combines vision transformer (SVTR) and CTC sequence decoding to output Unicode string sequences and per-box confidence $c_i \in [0.0, 1.0]$.
-* **Quality Gate Filter:**
-  $$\text{Status}(e_i) = \begin{cases} \text{"OK"} & \text{if } c_i \ge 0.30 \\ \text{"UNPROCESSABLE"} & \text{if } c_i < 0.30 \end{cases}$$
-  Shields the downstream LLM from low-confidence optical artifacts.
-* **Spatial Grid Clustering Algorithm (`infer_table_grid`):**
-  When table border lines are faded or absent:
-  1. Horizontal band clustering: Sorts elements by $y$-coordinate. Bins elements into rows where $|y_i - y_j| \le \frac{\text{median\_height}}{2}$.
-  2. Vertical column alignment: Within each row, sorts elements by $x$-coordinate and calculates dynamic column dividers.
-  3. Tags structured cells with `heuristic_sourced = true` in PostgreSQL for provenance auditing.
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **GPU Deep Learning Pipeline:** Powered by `PaddleOCR / PPStructureV3` running directly on CUDA (`device="gpu:0"`). Inference takes **`0.80 seconds`** on an NVIDIA RTX 3050.
+* **Text Detection (`PP-OCRv5_server_det`):** Built on the Differentiable Binarization (DBNet) architecture. Predicts probability maps and threshold maps to segment text contours at sub-pixel resolution.
+* **Text Recognition (`PP-OCRv5_server_rec`):** Employs a Vision Transformer backbone (SVTR) combined with Connectionist Temporal Classification (CTC) greedy decoding to map character probabilities into strings.
+* **Quality Threshold Gate:**
+  $$\text{Gate}(c_i) = \begin{cases} \text{"OK"} & \text{if } c_i \ge 0.30 \\ \text{"UNPROCESSABLE"} & \text{if } c_i < 0.30 \end{cases}$$
+* **Spatial Grid Heuristic (`infer_table_grid`):**
+  When table line borders are missing (`table_res_list` empty):
+  1. Elements are sorted vertically by $y$-coordinate.
+  2. Elements within $\Delta y \le \frac{\text{median\_height}}{2}$ are merged into horizontal **Row Bands**.
+  3. Inside each row band, elements are sorted by $x$-coordinate to assign **Column Indices**.
+  4. Each cell is saved in `ocr_elements` with `row_index`, `col_index`, and `heuristic_sourced = True`.
 
 ---
 
-### Station 3: LLM Schema Extraction & Mandatory Citation Graph
+### 🧠 Station 3: The Brain (LLM Schema Extraction & Citation Graph)
 
-#### 1. Technical Purpose
-Transforms unstructured OCR token streams into strongly-typed, normalized JSON entities according to locked domain schemas (Invoices and Salary Slips), eliminating generative hallucinations through mathematical citation constraints.
+#### 1. What It Does
+* **Semantic Document Classification:** Categorizes the document as an `invoice` or `salary_slip`.
+* **Entity Extraction:** Maps raw text fragments into standardized business fields (Seller, Buyer, Invoice Number, Gross, Net Pay, etc.).
+* **Zero-Hallucination Invariant:** Forces the LLM to cite the exact OCR box IDs where each number was read. If a field is not on the page, the LLM must return `null`.
 
+#### 2. Subsystem Architecture Drawing
 ```
-OCR Elements (Status: OK) ──► Prompt Serializer (Formats ID + BBox + Text)
-                                       │
-                                       ▼
-                       [NVIDIA NIM: Nemotron-3-Ultra]
-                       (System Prompt Enforcing Strict Schemas)
-                                       │
-                                       ├── Entity Normalization (Dates to ISO 8601, Currencies to Float)
-                                       ├── Synonym Resolution ("Vendor" ➔ "seller")
-                                       └── Mandatory Citation Enforcement:
-                                           field.value != null ⟹ len(source_element_ids) >= 1
-                                           field.value == null ⟹ len(source_element_ids) == 0
-                                       │
-                                       ▼
-                       Structured ExtractedField Records in PostgreSQL
+Valid OCR Elements (Status: OK)
+  [ID: 12, Text: "HADI ENTERPRISES", BBox: [100, 50, 200, 30]]
+  [ID: 15, Text: "INV-2024-001",    BBox: [350, 50, 120, 25]]
+  [ID: 22, Text: "Total: 81500",     BBox: [400, 600, 150, 30]]
+                 │
+                 ▼
+     [System Prompt Injection]
+     • Schema: Pydantic InvoiceSchema / SalarySlipSchema
+     • Constraint: Every non-null field MUST cite source_element_ids
+     • Constraint: Missing fields MUST return null + []
+                 │
+                 ▼
+    [NVIDIA NIM Cloud API]
+    Model: nvidia/nemotron-3-ultra-550b-a55b
+    (temperature=0.1, enable_thinking=False)
+                 │
+                 ▼
+     [Structured JSON Response]
+     {
+       "seller": { "value": "HADI ENTERPRISES", "source_element_ids": [12] },
+       "invoice_no": { "value": "INV-2024-001", "source_element_ids": [15] },
+       "due_date": { "value": null, "source_element_ids": [] }
+     }
 ```
 
-#### 2. Models & Extraction Contracts
-* **Inference Endpoint:** NVIDIA NIM API (`https://integrate.api.nvidia.com/v1`).
-* **Model:** `nvidia/nemotron-3-ultra-550b-a55b` executed with `temperature=0.1` and `chat_template_kwargs={"enable_thinking": False}` to prioritize deterministic extraction over free-form chain-of-thought generation.
-* **Strict Pydantic Contracts:**
-  - `InvoiceSchema`: `seller`, `buyer`, `invoice_no`, `invoice_date`, `due_date`, `subtotal`, `tax`, `total`, `line_items`.
-  - `SalarySlipSchema`: `employee_name`, `employer`, `pay_period`, `gross`, `deductions`, `net_pay`.
-* **Zero-Hallucination Invariant:**
-  $$\forall f \in \text{Fields}: \quad \text{Value}(f) \neq \text{null} \implies |\text{Citations}(f)| \ge 1 \quad \wedge \quad \text{Citations}(f) \subseteq \text{ValidOcrIDs}$$
-  If an entity does not exist in the source document, the model is strictly bound to return `null` and record the missing key in `could_not_extract`.
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **Model Inference:** Connects to NVIDIA NIM API (`https://integrate.api.nvidia.com/v1`) using the `nvidia/nemotron-3-ultra-550b-a55b` parameter reasoning model.
+* **Deterministic Configuration:** Invoked with `temperature=0.1` and `chat_template_kwargs={"enable_thinking": False}` so reasoning tokens do not consume the context budget.
+* **Locked Pydantic Contracts:**
+  * Invoices use `InvoiceSchema` (`seller`, `buyer`, `invoice_no`, `invoice_date`, `due_date`, `subtotal`, `tax`, `total`, `line_items`).
+  * Salary Slips use `SalarySlipSchema` (`employee_name`, `employer`, `pay_period`, `gross`, `deductions`, `net_pay`).
+* **Citation Verification Law:**
+  $$\forall \text{Field } f: \quad \text{Value}(f) \neq \text{null} \implies |\text{Citations}(f)| \ge 1 \quad \wedge \quad \text{Citations}(f) \subseteq \text{ValidOcrIDs}$$
+  Any missing field is recorded in the `could_not_extract` array.
 
 ---
 
-### Station 4: Deterministic Mathematical Validation Engine
+### 🧮 Station 4: The Accountant (Deterministic Math Validation)
 
-#### 1. Technical Purpose
-Decouples numerical reasoning from generative models by executing floating-point arithmetic audits and date ordering checks in pure Python to catch misread digits, OCR dropouts, or forged amounts.
+#### 1. What It Does
+* **Automated Audit:** Python code executes exact arithmetic checks on the extracted numbers.
+* **Catches Mismatches:** Detects if OCR misread a digit (e.g., adding an extra zero turning $\$81,500$ into $\$815,000$).
+* **Temporal Verification:** Confirms chronological order (e.g. Due Date $\ge$ Invoice Date).
 
+#### 2. Subsystem Architecture Drawing
 ```
-Extracted Fields ──► [Floating-Point Conversion]
-                             │
-                             ├── Audit 1: |subtotal + tax - total| <= 0.05
-                             ├── Audit 2: |gross - deductions - net_pay| <= 0.05
-                             └── Audit 3: parse_date(due_date) >= parse_date(invoice_date)
-                             │
-                             ▼
-              Persist ValidationFlag Records:
-              - rule_name: "subtotal_tax_sum"
-              - passed: False
-              - details: { subtotal: 81500, tax: 1500, total: 815000, difference: 732000 }
+Extracted Entity Values
+  • Subtotal = 81,500.00
+  • Tax      = 1,500.00
+  • Total    = 815,000.00
+            │
+            ▼
+ [Deterministic Python Validator]
+            │
+            ├── Rule 1: Δ = |Subtotal + Tax - Total|
+            │   Calculation: |81500 + 1500 - 815000| = 732,000
+            │   Check: 732,000 <= 0.05 ──► FALSE (FAIL)
+            │
+            ├── Rule 2: |Gross - Deductions - NetPay| <= 0.05
+            │
+            └── Rule 3: parse_iso(due_date) >= parse_iso(invoice_date)
+            │
+            ▼
+ Persist to validation_flags Table:
+ {
+   "rule_name": "subtotal_tax_sum",
+   "passed": false,
+   "details": { "difference": 732000, "expected": 83000, "total": 815000 }
+ }
 ```
 
-#### 2. Mathematical Rule Specifications
-* **Invoice Accounting Rule:**
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **Exact Floating-Point Comparison:**
   $$\Delta_{\text{inv}} = |\text{Subtotal} + \text{Tax} - \text{Total}|$$
-  $$\text{Pass}_{\text{inv}} = \begin{cases} 1.0 & \text{if } \Delta_{\text{inv}} \le 0.05 \\ 0.0 & \text{if } \Delta_{\text{inv}} > 0.05 \end{cases}$$
-* **Payroll Accounting Rule:**
-  $$\Delta_{\text{sal}} = |\text{Gross} - \text{Deductions} - \text{NetPay}|$$
-  $$\text{Pass}_{\text{sal}} = \begin{cases} 1.0 & \text{if } \Delta_{\text{sal}} \le 0.05 \\ 0.0 & \text{if } \Delta_{\text{sal}} > 0.05 \end{cases}$$
-* **Temporal Sequence Rule:**
-  $$\text{Pass}_{\text{date}} = \begin{cases} 1.0 & \text{if } \mathcal{T}(\text{due\_date}) \ge \mathcal{T}(\text{invoice\_date}) \\ 0.0 & \text{otherwise} \end{cases}$$
+  $$\text{ValidationPass} = \begin{cases} 1.0 & \text{if } \Delta_{\text{inv}} \le 0.05 \\ 0.0 & \text{if } \Delta_{\text{inv}} > 0.05 \end{cases}$$
+* **Payroll Validation:**
+  $$\Delta_{\text{payroll}} = |\text{Gross} - \text{Deductions} - \text{NetPay}| \le 0.05$$
+* **Date Parsing & Comparison:** Normalizes dates into Python `datetime.date` objects via ISO 8601 formatting and confirms that:
+  $$\text{Date}(\text{Due}) \ge \text{Date}(\text{Invoice})$$
 
 ---
 
-### Station 5: Multi-Factor Linear Confidence Engine
+### 📊 Station 5: The Trust Meter (Multi-Factor Confidence Scoring)
 
-#### 1. Technical Purpose
-Computes a mathematically grounded, verifiable confidence score for every extracted field by combining optical clarity, lexical similarity, and mathematical correctness—preventing generative models from self-scoring.
+#### 1. What It Does
+* **Objective Trust Score:** Calculates an objective confidence score from **0.0 to 1.0** for every field based on optics, text similarity, and math.
+* **The Penalty Cap:** If mathematical validation failed at Station 4, the score is **instantly clamped to $\le 0.50$**, forcing human review.
 
+#### 2. Subsystem Architecture Drawing
 ```
-Cited OCR Elements ──► [Mean Optical Confidence O]
-                                │
-Raw OCR String vs Value ──► [Levenshtein String Similarity S]
-                                │
-ValidationFlag Result ──► [Deterministic Verification V]
+[Cited OCR Boxes]          [Extracted String vs OCR]         [Validation Flag]
+       │                                │                           │
+       ▼                                ▼                           ▼
+Mean OCR Conf (O)             Levenshtein Sim (S)            Math Pass (V = 0 or 1)
+   (Weight: 0.50)               (Weight: 0.30)                  (Weight: 0.20)
+       │                                │                           │
+       └────────────────────────┬───────┴───────────────────────────┘
                                 │
                                 ▼
-         Linear Weighted Combination: Score = 0.5*O + 0.3*S + 0.2*V
+        Linear Formula: Score = 0.50*O + 0.30*S + 0.20*V
                                 │
-                 Is Validation Pass V == 0?
-                        /               \
-                      YES               NO
-                      /                   \
-        Clamp Score: min(Score, 0.50)   Unclamped Score
-                      \                   /
-                       ▼                 ▼
-          Final Confidence & Routing (>=0.70 ➔ auto_accepted, <0.70 ➔ needs_review)
+                        Is Math Pass V == 0?
+                               /    \
+                             YES     NO
+                             /        \
+             Score = min(Score, 0.50)  Score unchanged
+                             \        /
+                              ▼      ▼
+                      Final Field Confidence
+                 (>= 0.70 ➔ auto_accepted | < 0.70 ➔ needs_review)
 ```
 
-#### 2. Mathematical Formulas & Vector Components
-For each field $f$:
-$$\text{Confidence}(f) = w_o \cdot O(f) + w_s \cdot S(f) + w_v \cdot V(f)$$
-Where weights are locked to:
-$$w_o = 0.50, \quad w_s = 0.30, \quad w_v = 0.20 \quad \left(\sum w_i = 1.0\right)$$
-
-* **Component $O(f)$ (Optical Clarity):**
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **The Formula:**
+  $$\text{Confidence}(f) = 0.50 \cdot O(f) + 0.30 \cdot S(f) + 0.20 \cdot V(f)$$
+* **Optical Component $O(f)$:** The arithmetic mean of all bounding boxes cited by the field:
   $$O(f) = \frac{1}{|C(f)|} \sum_{i \in C(f)} \text{conf}(e_i)$$
-  Where $C(f)$ is the set of cited OCR bounding boxes for field $f$.
-* **Component $S(f)$ (Lexical Similarity):**
-  Based on normalized Levenshtein edit distance:
-  $$S(f) = 1.0 - \frac{\text{LevenshteinDistance}(\text{val}_{\text{norm}}, \text{ocr}_{\text{norm}})}{\max(\text{len}(\text{val}_{\text{norm}}), \text{len}(\text{ocr}_{\text{norm}}))}$$
-* **Component $V(f)$ (Validation Pass):**
-  $$V(f) \in \{0.0, 1.0\}$$
+* **Lexical Similarity Component $S(f)$:** Normalized Levenshtein edit distance comparing extracted text against raw OCR text:
+  $$S(f) = 1.0 - \frac{\text{LevenshteinDistance}(\text{value}, \text{ocr\_text})}{\max(\text{len}(\text{value}), \text{len}(\text{ocr\_text}))}$$
+* **Validation Component $V(f)$:** $1.0$ if the field passed all arithmetic/date rules; $0.0$ if it failed.
 * **The Clamping Invariant:**
-  $$\text{FinalConfidence}(f) = \begin{cases} \min(\text{Confidence}(f), 0.50) & \text{if } V(f) = 0.0 \\ \text{Confidence}(f) & \text{if } V(f) = 1.0 \end{cases}$$
+  $$\text{If } V(f) = 0.0 \implies \text{Confidence}(f) = \min(\text{Confidence}(f), 0.50)$$
 
 ---
 
-### Station 6: Dual-Engine Forensic Tamper Detection
+### 🕵️ Station 6: The Forensic Detective (Tamper Detection)
 
-#### 1. Technical Purpose
-Uncovers fraudulent documents, forged values, and digital tampering using a two-tier forensic methodology: structural metadata analysis for digital PDFs, and pixel-level Error Level Analysis (ELA) for image rasters.
+#### 1. What It Does
+* **PDF Metadata Forensics:** Checks whether a PDF's creation timestamp precedes its modification timestamp or if editing tools (Photoshop, Acrobat Pro, Canva) were used.
+* **Pixel Error Level Analysis (ELA):** Re-compresses the image at JPEG Quality 90 and measures compression error variance across $64 \times 64$ blocks. Edited or pasted text glows brightly on a color heatmap.
 
+#### 2. Subsystem Architecture Drawing
 ```
-Document Input
-     │
-     ├──► [Path A: PDF Metadata Forensics (PyMuPDF)]
-     │         │
-     │         ├── ModDate > CreationDate? ──► SUSPICIOUS
-     │         └── Producer in [Photoshop, Acrobat Pro, GIMP, Canva]? ──► SUSPICIOUS
-     │         (If Image ──► Returns NOT_APPLICABLE honestly)
-     │
-     └──► [Path B: Error Level Analysis (ELA)]
-               │
-               ├── Re-compress at JPEG Quality = 90
-               ├── Delta Matrix: Δ = |Original - Recompressed|
-               ├── Scale Amplification: 18x
-               ├── Render JET Color Heatmap (OpenCV)
-               │
-               ▼
-     [64x64 Block Grid Scan]
-               │
-               ├── Compute Variance for every block: σ²_block
-               ├── Overall Mean Variance: σ²_overall
-               ├── Maximum Local Variance: σ²_max
-               ├── Variance Ratio: R = σ²_max / (σ²_overall + ε)
-               │
-               ▼
-     Threshold Decision Matrix:
-     - R >= 3.0 AND σ²_max > 150 ⟹ SUSPICIOUS (HIGH RISK)
-     - R >= 2.0 AND σ²_max > 75  ⟹ SUSPICIOUS (MEDIUM RISK)
-     - R < 2.0                   ⟹ CLEAN (LOW RISK)
+Input Document
+      │
+      ├──► [Check A: PDF Metadata (PyMuPDF)]
+      │         │
+      │         ├── ModDate > CreationDate? ────► Flag: SUSPICIOUS
+      │         ├── Producer in KnownEditingTools? ─► Flag: SUSPICIOUS
+      │         └── Is Image (JPG/PNG)? ────────► Flag: NOT_APPLICABLE (No fake pass)
+      │
+      └──► [Check B: Error Level Analysis (ELA)]
+                │
+                ├── cv2.imencode('.jpg', Q=90) ➔ Re-compressed in memory
+                ├── cv2.absdiff(Original, Recompressed) ➔ Delta Matrix Δ
+                ├── cv2.convertScaleAbs(Δ, alpha=18.0) ➔ 18x Amplification
+                ├── cv2.applyColorMap(COLORMAP_JET) ➔ Save PNG Heatmap
+                │
+                ▼
+      [64x64 Block Variance Grid Scan]
+                │
+                ├── Compute Variance for each block: σ²_block
+                ├── Calculate Global Mean Variance:  σ²_overall
+                ├── Find Maximum Local Spike:       σ²_max
+                ├── Variance Ratio: R = σ²_max / (σ²_overall + 1e-6)
+                │
+                ▼
+      Decision Thresholds:
+      • R >= 3.0 AND σ²_max > 150 ⟹ SUSPICIOUS (HIGH RISK)
+      • R >= 2.0 AND σ²_max > 75  ⟹ SUSPICIOUS (MEDIUM RISK)
+      • R < 2.0                   ⟹ CLEAN (LOW RISK)
 ```
 
-#### 2. Detailed Algorithmic Execution
-* **Path A: Metadata Extraction:**
-  Parses the internal PDF catalog (`/Info` dictionary):
-  $$\Delta_{\text{time}} = \mathcal{T}(\text{ModDate}) - \mathcal{T}(\text{CreationDate})$$
-  $$\text{Flag}_{\text{meta}} = \begin{cases} \text{SUSPICIOUS} & \text{if } \Delta_{\text{time}} > 0 \quad \vee \quad \text{Producer} \in \mathcal{S}_{\text{editing\_tools}} \\ \text{CLEAN} & \text{otherwise} \end{cases}$$
-* **Path B: Error Level Analysis (ELA):**
-  1. Let $I(x, y)$ be the input image matrix in RGB space.
-  2. Encode to JPEG byte-stream $J_{90} = \text{JPEGEncode}(I, \text{quality}=90)$ and decode back:
-     $$\tilde{I}(x, y) = \text{JPEGDecode}(J_{90})$$
-  3. Compute absolute element-wise difference:
-     $$D(x, y) = |I(x, y) - \tilde{I}(x, y)|$$
-  4. Amplification:
-     $$A(x, y) = \text{clip}(18.0 \cdot D(x, y), 0, 255)$$
-  5. Grayscale conversion $G(x, y) = \text{Grayscale}(A)$ and colormap rendering:
-     $$H(x, y) = \text{ApplyColorMap}(G(x, y), \text{COLORMAP\_JET})$$
-* **Statistical Grid Variance Analysis:**
-  The image $G$ of dimensions $W \times H$ is partitioned into disjoint blocks $B_{k}$ of size $64 \times 64$:
-  $$\mu_k = \frac{1}{4096} \sum_{(x, y) \in B_k} G(x, y), \quad \sigma^2_k = \frac{1}{4096} \sum_{(x, y) \in B_k} (G(x, y) - \mu_k)^2$$
-  $$\bar{\sigma}^2 = \frac{1}{K} \sum_{k=1}^K \sigma^2_k, \quad \sigma^2_{\max} = \max_{k} \sigma^2_k$$
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **Metadata Forensics (`fitz` / PyMuPDF):** Reads the PDF dictionary. If the document was produced by editing software (`Photoshop`, `Acrobat Pro`, `GIMP`, `Canva`, `InDesign`), it flags `HIGH RISK`. For images without PDF headers, it returns `NOT_APPLICABLE`.
+* **Error Level Analysis (ELA) Math:**
+  1. Let $I$ be the image. Re-encode at 90% quality JPEG: $\tilde{I} = \text{JPEG}_{90}(I)$.
+  2. Compute absolute pixel error: $D = |I - \tilde{I}|$.
+  3. Amplify difference by $18\times$: $A = \min(18.0 \cdot D, 255)$.
+  4. Generate a JET color map: Blue is lowest error (baseline), Red/White is highest error.
+* **$64 \times 64$ Patch Statistical Scan:**
+  The image is divided into disjoint $64 \times 64$ blocks $B_k$. For each block:
+  $$\sigma^2_k = \text{Var}(B_k), \quad \bar{\sigma}^2 = \text{Mean}(\sigma^2_k), \quad \sigma^2_{\max} = \max_k(\sigma^2_k)$$
   $$\text{Variance Ratio } R = \frac{\sigma^2_{\max}}{\bar{\sigma}^2 + 10^{-6}}$$
+  If $R \ge 3.0$ and $\sigma^2_{\max} > 150.0$, the document is marked **`SUSPICIOUS (HIGH RISK)`**.
 
 ---
 
-### Station 7: Unified Aggregation & Human-in-the-Loop Routing
+### 🎯 Station 7: The Final Verdict (Aggregator & Routing)
 
-#### 1. Technical Purpose
-Aggregates all metadata, OCR boxes, extracted fields, mathematical flags, tamper statistics, and visual heatmap links into a single, unified JSON document report for API consumers and frontend review interfaces.
+#### 1. What It Does
+Bundles all findings into a single response and routes the document:
+* **`AUTO_ACCEPTED`:** High confidence ($\ge 0.70$) + passed math validation + low tamper risk.
+* **`NEEDS_REVIEW`:** Low confidence ($< 0.70$) **OR** failed math validation **OR** suspicious tamper signals.
 
-#### 2. The Decision Logic Table
+#### 2. Subsystem Architecture Drawing
+```
+Pipeline Results (DB Tables)
+  • ocr_elements
+  • extracted_fields
+  • validation_flags
+  • tamper_flags
+            │
+            ▼
+ [Unified Report Aggregator]
+ (pipeline.generate_full_report)
+            │
+            ├── Builds scalar fields dictionary with (O, S, V) confidence
+            ├── Reconstructs line item rows
+            ├── Embeds duplication status (SHA-256 + semantic match)
+            ├── Attaches direct image URLs:
+            │     • /storage/preprocessed/{id}_preprocessed.png
+            │     • /storage/tamper/{id}_ela_heatmap.png
+            │
+            ▼
+ Complete Unified JSON Response
+ (GET /api/v1/documents/{doc_id}/full-report)
+```
 
-| Final Document Status | Confidence Threshold | Math Validation | Tamper Risk | Action Taken |
-| :--- | :--- | :--- | :--- | :--- |
-| **`AUTO_ACCEPTED`** | $\ge 0.70$ for all critical fields | All rules passed ($V=1.0$) | `LOW` | Straight-through processing to ERP / accounting |
-| **`NEEDS_REVIEW`** | $< 0.70$ on any field | Failed rule (e.g. mismatch) | `MEDIUM` or `HIGH` | Routed to human reviewer dashboard with visual bounding box overlays |
-| **`REJECTED`** | N/A | Corrupted file / unreadable | Blatant fraud | Automated rejection notice with audit log |
+#### 3. ⚙️ How It Works (Technological Mechanisms)
+* **Single Endpoint Aggregation:** `GET /api/v1/documents/{doc_id}/full-report` pulls from all relational tables via SQLAlchemy 2.0 in a single database session.
+* **Direct Image Serving:** Mounted via Starlette `StaticFiles` at `/storage`, enabling the frontend reviewer UI to render the original image, bounding box overlays, and ELA heatmaps side-by-side.
 
 ---
 
-## 💾 Database Schema Architecture (PostgreSQL 16)
+## 💾 Database Entity-Relationship Model (PostgreSQL 16)
 
 ```mermaid
 erDiagram
-    DOCUMENTS ||--o{ OCR_ELEMENTS : "contains"
-    DOCUMENTS ||--o{ EXTRACTED_FIELDS : "yields"
-    DOCUMENTS ||--o{ VALIDATION_FLAGS : "evaluated_by"
-    DOCUMENTS ||--o{ TAMPER_FLAGS : "screened_by"
+    DOCUMENTS ||--o{ OCR_ELEMENTS : "has many"
+    DOCUMENTS ||--o{ EXTRACTED_FIELDS : "has many"
+    DOCUMENTS ||--o{ VALIDATION_FLAGS : "has many"
+    DOCUMENTS ||--o{ TAMPER_FLAGS : "has many"
 
     DOCUMENTS {
-        uuid id PK
-        string filename
-        string file_path
-        string preprocessed_path
-        string doc_type
-        string status
-        jsonb doc_metadata
-        timestamp created_at
+        UUID id PK
+        VARCHAR filename
+        VARCHAR file_path
+        VARCHAR preprocessed_path
+        VARCHAR doc_type
+        VARCHAR status
+        JSONB doc_metadata
+        TIMESTAMP created_at
     }
 
     OCR_ELEMENTS {
-        uuid id PK
-        uuid document_id FK
-        text text
-        float confidence
-        jsonb bbox
-        string region_type
-        int row_index
-        int col_index
-        boolean heuristic_sourced
+        UUID id PK
+        UUID document_id FK
+        TEXT text
+        FLOAT confidence
+        JSONB bbox
+        VARCHAR region_type
+        INT row_index
+        INT col_index
+        BOOLEAN heuristic_sourced
     }
 
     EXTRACTED_FIELDS {
-        uuid id PK
-        uuid document_id FK
-        string field_name
-        string extracted_value
-        float final_confidence
-        float ocr_confidence
-        float string_similarity
-        int validation_pass
-        string review_status
-        jsonb source_element_ids
+        UUID id PK
+        UUID document_id FK
+        VARCHAR field_name
+        VARCHAR extracted_value
+        FLOAT final_confidence
+        FLOAT ocr_confidence
+        FLOAT string_similarity
+        INT validation_pass
+        VARCHAR review_status
+        JSONB source_element_ids
     }
 
     VALIDATION_FLAGS {
-        uuid id PK
-        uuid document_id FK
-        string rule_name
-        string field_name
-        boolean passed
-        jsonb details
+        UUID id PK
+        UUID document_id FK
+        VARCHAR rule_name
+        VARCHAR field_name
+        BOOLEAN passed
+        JSONB details
     }
 
     TAMPER_FLAGS {
-        uuid id PK
-        uuid document_id FK
-        string check_type
-        string result
-        string risk_level
-        jsonb details
-        string heatmap_path
+        UUID id PK
+        UUID document_id FK
+        VARCHAR check_type
+        VARCHAR result
+        VARCHAR risk_level
+        JSONB details
+        VARCHAR heatmap_path
     }
 ```
